@@ -319,7 +319,7 @@ EUPL version."""
 def main():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("license_holder", help="name of licence holder, obligatory")
+    parser.add_argument("license_holder", help="name of licence holder, use quotation marks to include whitespace")
     parser.add_argument("-d", "--date", help="year to use, no sanity checks will be used literally", default=datetime.datetime.now().year)
     parser.add_argument("-l", "--license", help="specifies license to add", default="eupl" )
     parser.add_argument("-ln", "--license_file_name", help="specifies name of license file, default LICENSE", default="LICENSE" )
