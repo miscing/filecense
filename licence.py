@@ -318,24 +318,31 @@ EUPL version."""
 
 def main():
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("license_holder", help="name of licence holder, obligatory")
+    parser.add_argument("-d", "--date", help="year to use, no sanity checks will be used literally", default=datetime.datetime.now().year)
+    parser.add_argument("-l", "--license", help="specifies license to add", default="eupl" )
+    parser.add_argument("-ln", "--license_file_name", help="specifies name of license file, default LICENSE", default="LICENSE" )
+    parser.add_argument("-p", "--path", help="specifies path to parse", default=".")
+    parser.add_argument("-f", "--format", help="specifies comment syntax based on language, defaults to python", default="")
+    parser.add_argument("-c", "--comment", help="places provided string at the front of every sentence  of top template, overrides format option", default="")
+    parser.add_argument("-v", "--verbose", help="increased verbosity", action="store_true")
+    args = parser.parse_args()
+
+    if (args.verbose):
+        print("using current year: ", args.date)
+
     # Set up items to ignore
     ignoredirs = ignore_items()
     ignoredirs.add_item(".git", "simple")
     ignoredirs.add_item("testdata", "simple")
+    ignoredirs.add_item("^\..+", "regex")
     ignorefiles = ignore_items()
     ignorefiles.add_item("README\.*\w{0,5}$", "regex")
-    ignorefiles.add_item("^\..*", "regex")
-    ignorefiles.add_item(".*\.\w{1,3}$", "regex")
+    ignorefiles.add_item("^.+\.txt$", "regex")
+    ignorefiles.add_item("^\..+", "regex")
+    ignorefiles.add_item("^\w+$", "regex")
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-n", "--name", help="name of licence holder, obligatory")
-    parser.add_argument("-d", "--date", help="year to use, no sanity checks will be used literally", default=datetime.datetime.now().year)
-    parser.add_argument("-l", "--license", help="specifies license to add", default="eupl" )
-    parser.add_argument("-p", "--path", help="specifies path to parse", default=".")
-    parser.add_argument("-f", "--format", help="specifies comment syntax based on language", default="py")
-    parser.add_argument("-c", "--comment", help="places provided string at the front of every sentence including an empty on at the start, overrides format option", default="")
-    parser.add_argument("-v", "--verbose", help="increased verbosity", action="store_true")
-    args = parser.parse_args()
 
     fer = finder(args.verbose, ignoredirs, ignorefiles)
     res = fer.find_files(args.path)
@@ -347,26 +354,65 @@ def main():
         lic = license[args.license]
     except:
         print("license not supported")
+        return 2
     else:
-        top = ""
-        if args.comment == "":
-            formats = {
-                    "py" : "#",
-                    "go" : "//"
-                    }
-            top = comment_out(lic[0], formats[args.format])
-        else:
-            top = comment_out(lic[0], args.comment)
-        write_top(top % (args.name, args.date), res)
+        for p in res:
+            format_str = ""
+            if args.comment == "":
+                formats = {
+                        "py" : "#",
+                        "go" : "//"
+                        }
+                if args.format != "":
+                    try:
+                        format_str = formats[args.format]
+                    except:
+                        print("specified format not supported")
+                        return 2
+                else:
+                    # attempt filetype detection by extension
+                    try:
+                        format_str = formats[os.path.splitext(p)[1][1:]]
+                    except:
+                        print(os.path.splitext(p)[1][1:])
+                        print("could not detect filetype (or filetype not supported, use '-c' flag or '-f' flags) of file: ", p)
+                        return 2
+
+                top = comment_out(lic[0], format_str)
+            else:
+                format_str = args.comment
+            top = comment_out(lic[0], format_str)
+            # print( top % (args.date, args.license_holder))
+            write_top(top % (args.date, args.license_holder), p)
+
+        # add full text
+        tuples = os.walk(args.path, topdown=True)
+        for root, dirs, files in tuples:
+            for d in dirs:
+                if d == ".git":
+                    if (args.verbose):
+                        print("found .git directory at: ", root, " adding full license text there from presumption it's project root")
+                    write_full(lic[1], root, args.license_file_name)
+
+def write_full(text, location, name):
+    try:
+        f = open(os.path.join(location, name), "x")
+    except:
+        print("license file of name: ", os.path.join(location, name), " exists")
+        return
+    else:
+        f.write(text)
+        f.close()
 
 def comment_out(text, comment):
-    res = [""]
+    res = []
     for line in text.splitlines():
         res.append(comment+' '+line)
-    return res
+    return "\n".join(res)
 
 class ignore_items(dict):
-    data = {}
+    def __init__(self):
+        self.data = {}
     def __setitem__(self, k, v):
         self.data[k] = v
     def __getitem__(self, k):
@@ -393,10 +439,10 @@ class ignore_items(dict):
         try:
             res = regex.search(toMatch)
         except:
-            print("error")
+            print("error doing regex search")
             return False
         else:
-            if ( res != 'None' ):
+            if ( res != None ):
                 return True
             else:
                 return False
@@ -409,7 +455,25 @@ class finder:
     def find_files(self, path):
         res = []
         tuples = os.walk(path, topdown=True)
+        if self.verbose:
+            print("Directories to skip:")
+            for skipdir in self.ignore_dirs:
+                print("\t", end='')
+                print(skipdir)
+            print("Files to skip:")
+            for skipfile in self.ignore_files:
+                print("\t", end='')
+                print(skipfile)
+
         for root, dirs, files in tuples:
+            if self.verbose:
+                print("\nDirs and files found:")
+                for d in dirs:
+                    print(d)
+                for f in files:
+                    print(f)
+                print()
+
             mark = True
             doubleBreak = False
             while mark: # we need to restart from top after deleting an element
@@ -417,6 +481,8 @@ class finder:
                 for d in dirs:
                     for key in self.ignore_dirs:
                         if ( self.ignore_dirs[key](key, d) ):
+                            if self.verbose:
+                                print("skipping dir: ", os.path.join(root, d), " due to: ", key)
                             try:
                                 dirs.remove(d)
                             except:
@@ -426,73 +492,41 @@ class finder:
                                 doubleBreak = True
                                 break
                     if doubleBreak:
+                        doubleBreak = False
                         break
                     i+=1
-                    if i > len(dirs):
-                        mark = False
+                if i >= len(dirs):
+                    mark = False
+                    break
 
-            mark = True
-            doubleBreak = False
-            while mark: # we need to restart from top after deleting an element
-                i = 0
-                for f in files:
-                    for key in self.ignore_files:
-                        if ( self.ignore_files[key](key, d) ):
-                            try:
-                                dirs.remove(d)
-                            except:
-                                print("failed to ignore a directory", d)
-                                return 2
-                            else:
-                                doubleBreak = True
-                                break
-                    if doubleBreak:
+            for f in files:
+                mark = True
+                for key in self.ignore_files:
+                    if ( self.ignore_files[key](key, f) ):
+                        if self.verbose:
+                            print("skipping file: ", os.path.join(root, f), " due to: ", key)
+                        mark = False
                         break
-                    i+=1
-                    if i > len(dirs):
-                        mark = False
-
-            # mark = True
-            # while mark: # we need to restart from top after deleting an element
-            #     for f in files:
-            #         for key, func in self.ignore_files:
-            #             if ( self.ignore_files[key](key, f) ):
-            #                 res.append(os.path.join(root, f))
-            #                 if self.vebose:
-            #                     print("adding license to: ", os.path.join(root, f))
-            #                     break
-            #             else:
-            #                 if self.vebose:
-            #                     print("adding license to: ", os.path.join(root, f))
-
+                    else:
+                        continue
+                if mark:
+                    res.append(os.path.join(root, f))
+                    if self.verbose:
+                        print("file: ", os.path.join(root, f), "to be operated on")
+        if self.verbose:
+            print("\nfiles to add license to")
+            print(res)
+            print()
         return res
 
-    # for d in dirs:
-        #     if d == ".git":
-        #         dirs.remove(d)
-        # for d in dirs:
-        #     regex = re.compile("\..*")
-        #     if len(regex.findall(f)) != 0:
-        #         continue
-        # for f in files:
-        #     regex = re.compile(".*README.*")
-        #     if len(regex.findall(f)) != 0:
-        #         continue
-        #     regex = re.compile("\..*")
-        #     if len(regex.findall(f)) != 0:
-        #         continue
-        #     print(os.path.join(root, f))
-        #     res.append(os.path.join(root, f))
-
-def write_top(ntop, files):
+def write_top(ntop, path):
     saved = ""
-    for path in files:
-        f = open(path, 'r')
-        saved = f.read()
-        f.close()
-        f = open(path, 'w')
-        f.writelines([ntop ,"\n",saved])
-        f.close()
+    f = open(path, 'r')
+    saved = f.read()
+    f.close()
+    f = open(path, 'w')
+    f.writelines([ntop ,"\n",saved])
+    f.close()
 
 if __name__ == "__main__":
     main()
