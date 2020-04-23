@@ -383,12 +383,12 @@ class ignore_items(dict):
         self[name] = self.simple_check
     def set_regex(self, name):
         self[name] = self.regex_check
-    def simple_check(matchTo, toMatch):
+    def simple_check(self, matchTo, toMatch):
         if matchTo == toMatch:
             return True
         else:
             return False
-    def regex_check(matchTo, toMatch):
+    def regex_check(self, matchTo, toMatch):
         regex = re.compile(matchTo)
         try:
             res = regex.search(toMatch)
@@ -416,7 +416,6 @@ class finder:
                 i = 0
                 for d in dirs:
                     for key in self.ignore_dirs:
-                        print( key,d)
                         if ( self.ignore_dirs[key](key, d) ):
                             try:
                                 dirs.remove(d)
@@ -433,17 +432,38 @@ class finder:
                         mark = False
 
             mark = True
+            doubleBreak = False
             while mark: # we need to restart from top after deleting an element
+                i = 0
                 for f in files:
-                    for key, func in self.ignore_files:
-                        if ( func(key, f) ):
-                            res.append(os.path.join(root, f))
-                            if self.vebose:
-                                print("adding license to: ", os.path.join(root, f))
+                    for key in self.ignore_files:
+                        if ( self.ignore_files[key](key, d) ):
+                            try:
+                                dirs.remove(d)
+                            except:
+                                print("failed to ignore a directory", d)
+                                return 2
+                            else:
+                                doubleBreak = True
                                 break
-                        else:
-                            if self.vebose:
-                                print("adding license to: ", os.path.join(root, f))
+                    if doubleBreak:
+                        break
+                    i+=1
+                    if i > len(dirs):
+                        mark = False
+
+            # mark = True
+            # while mark: # we need to restart from top after deleting an element
+            #     for f in files:
+            #         for key, func in self.ignore_files:
+            #             if ( self.ignore_files[key](key, f) ):
+            #                 res.append(os.path.join(root, f))
+            #                 if self.vebose:
+            #                     print("adding license to: ", os.path.join(root, f))
+            #                     break
+            #             else:
+            #                 if self.vebose:
+            #                     print("adding license to: ", os.path.join(root, f))
 
         return res
 
