@@ -348,7 +348,7 @@ def main():
     parser.add_argument("-sf", "--skipfile", help="sets files to skip", nargs="+")
     parser.add_argument("-re", "--regex", help="together with skip flags causes arguments to be interpreted as regex strings", action="store_true")
     parser.add_argument("-p", "--path", help="specifies path to parse, default is current directory", default=".")
-    parser.add_argument("-f", "--format", help="specifies comment syntax based on language", default="")
+    parser.add_argument("-f", "--format", help="specifies comment syntax based on language, such as py for python comments. Usually unnecessary", default="")
     parser.add_argument("-c", "--comment", help="places provided string at the front of every sentence  of top template, overrides format option", default="")
     parser.add_argument("-v", "--verbose", help="increased verbosity", action="store_true")
     args = parser.parse_args()
