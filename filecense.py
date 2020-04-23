@@ -344,6 +344,9 @@ def main():
     parser.add_argument("-d", "--date", help="year to use, no sanity checks will be used literally", default=datetime.datetime.now().year)
     parser.add_argument("-l", "--license", help="specifies license to add", default="eupl" )
     parser.add_argument("-ln", "--license_file_name", help="specifies name of license file, default LICENSE", default="LICENSE" )
+    parser.add_argument("-sd", "--skipdir", help="sets directories to skip", nargs="+")
+    parser.add_argument("-sf", "--skipfile", help="sets files to skip", nargs="+")
+    parser.add_argument("-re", "--regex", help="together with skip flags causes arguments to be interpreted as regex strings", action="store_true")
     parser.add_argument("-p", "--path", help="specifies path to parse, default is current directory", default=".")
     parser.add_argument("-f", "--format", help="specifies comment syntax based on language", default="")
     parser.add_argument("-c", "--comment", help="places provided string at the front of every sentence  of top template, overrides format option", default="")
@@ -358,11 +361,24 @@ def main():
     ignoredirs.add_item(".git", "simple")
     ignoredirs.add_item("testdata", "simple")
     ignoredirs.add_item("^\..+", "regex")
+    if args.skipdir != None:
+        for sd in args.skipdir:
+            if args.regex:
+                ignoredirs.add_item(sd, "regex")
+            else:
+                ignoredirs.add_item(sd, "simple")
+
     ignorefiles = ignore_items()
     ignorefiles.add_item("README\.*\w{0,5}$", "regex")
     ignorefiles.add_item("^.+\.txt$", "regex")
     ignorefiles.add_item("^\..+", "regex")
     ignorefiles.add_item("^\w+$", "regex")
+    if args.skipfile != None:
+        for sf in args.skipfile:
+            if args.regex:
+                ignorefiles.add_item(sf, "regex")
+            else:
+                ignorefiles.add_item(sf, "simple")
 
 
     fer = finder(args.verbose, ignoredirs, ignorefiles)
