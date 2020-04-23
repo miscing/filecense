@@ -383,7 +383,12 @@ def main():
                 format_str = args.comment
             top = comment_out(lic[0], format_str)
             # print( top % (args.date, args.license_holder))
-            write_top(top % (args.date, args.license_holder), p)
+            try:
+                write_top(top % (args.date, args.license_holder), p)
+            except Exception as error:
+                print("failed to write top, quitting")
+                print(error)
+                return 2
 
         # add full text
         tuples = os.walk(args.path, topdown=True)
@@ -406,8 +411,11 @@ def write_full(text, location, name):
 
 def comment_out(text, comment):
     res = []
+    res.append(comment)
     for line in text.splitlines():
         res.append(comment+' '+line)
+    res.append(comment)
+    res.append("")
     return "\n".join(res)
 
 class ignore_items(dict):
@@ -520,11 +528,21 @@ class finder:
         return res
 
 def write_top(ntop, path):
-    saved = ""
+    regex= re.compile("^#!/.+$")
     f = open(path, 'r')
+    line = f.readline()
+    mark = False
+    if regex.search(line) != None:
+        mark = True
+        pass
+    else:
+        f.seek(0) # reset file position
     saved = f.read()
     f.close()
+
     f = open(path, 'w')
+    if mark:
+        f.write(line)
     f.writelines([ntop ,"\n",saved])
     f.close()
 
