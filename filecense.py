@@ -382,6 +382,11 @@ def main():
             if args.comment == "":
                 formats = {
                         "py" : "#",
+                        "js" : "//",
+                        "ts" : "//",
+                        "cpp" : "//",
+                        "c" : "//",
+                        "C" : "//",
                         "go" : "//"
                         }
                 if args.format != "":
