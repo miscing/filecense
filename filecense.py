@@ -28,12 +28,12 @@ import argparse
 
 #  templates
 
-beerTop = """"Copyright %d %s
+beerTop = """Copyright %d %s
 THE BEER-WARE LICENSE":
 As long as you retain this notice you can do whatever you want with this stuff.
 If we meet some day, and you think this stuff is worth it, you can buy me a beer in return."""
 
-beerFull = """"
+beerFull = """
 THE BEER-WARE LICENSE":
 As long as you retain this notice you can do whatever you want with this stuff.
 If we meet some day, and you think this stuff is worth it, you can buy me a beer in return.
@@ -2327,7 +2327,7 @@ def main():
     args = parser.parse_args()
 
     if (args.verbose):
-        print("using current year: ", args.date)
+        print("using system date year: ", args.date)
 
     if (args.listlicenses):
         for l in license:
@@ -2348,9 +2348,9 @@ def main():
 
     ignorefiles = ignore_items()
     ignorefiles.add_item("README\.*\w{0,5}$", "regex")
-    ignorefiles.add_item("^.+\.txt$", "regex")
-    ignorefiles.add_item("^\..+", "regex")
-    ignorefiles.add_item("^\w+$", "regex")
+    ignorefiles.add_item("^.+\.txt$", "regex") #text files
+    ignorefiles.add_item("^\..+", "regex") #skip hidden files
+    ignorefiles.add_item("^\w+$", "regex") #skip binaries
     if args.skipfile != None:
         for sf in args.skipfile:
             if args.regex:
