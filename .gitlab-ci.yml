@@ -6,17 +6,16 @@ stages:
 container:
   image: docker:latest
   stage: build
-  # only:
-  #   refs:
-  #     - branches
-  #   changes:
-  #     - ./filecense.py
-  #     - ./Dockerfile
-  #     - ./.gitlab-ci.yml
+  tags:
+    - docker
   script:
     - docker build --tag $CI_REGISTRY_IMAGE/$CI_PROJECT_NAME .
     - docker login --username $CI_REGISTRY_USER --password $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push $CI_REGISTRY_IMAGE/$CI_PROJECT_NAME
-  tags:
-    - docker
-
+  only:
+    refs:
+      - branches
+    changes:
+      - filecense.py
+      - Dockerfile
+      - .gitlab-ci.yml
