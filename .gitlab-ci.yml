@@ -12,10 +12,10 @@ container:
       - ./filecense.py
       - ./Dockerfile
       - ./.gitlab-ci.yml
-    script:
-      - docker build --tag $CI_REGISTRY_IMAGE/$CI_PROJECT_NAME .
-      - docker login --username $CI_REGISTRY_USER --password $CI_REGISTRY_PASSWORD $CI_REGISTRY
-      - docker push $CI_REGISTRY_IMAGE/$CI_PROJECT_NAME
-    tags:
-      - docker
+  script:
+    - docker build --tag $CI_REGISTRY_IMAGE/$CI_PROJECT_NAME .
+    - docker login --username $CI_REGISTRY_USER --password $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push $CI_REGISTRY_IMAGE/$CI_PROJECT_NAME
+  tags:
+    - docker
 
