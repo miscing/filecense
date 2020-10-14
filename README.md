@@ -7,7 +7,7 @@ You can use the docker image in ci/cd, just pass the license holder name as 'Jos
 ## NOTES:
  - `license_holder` argument must come before options with multiple values
 
-###USAGE:
+### USAGE:
 
 usage: filecense [-h] [-d DATE] [-l LICENSE] [-list] [-ln LICENSE_FILE_NAME]
                  [-sd SKIPDIR [SKIPDIR ...]] [-sf SKIPFILE [SKIPFILE ...]] [-re] [-p PATH]
