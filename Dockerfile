@@ -1,5 +1,5 @@
 FROM python:latest
 
-COPY ./filecense.py /bin/filecense
+COPY ./filecense.py /home/
 
-ENTRYPOINT [ filecense ]
+ENTRYPOINT [ "python", "/home/filecense.py" ]
