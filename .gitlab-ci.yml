@@ -1,0 +1,21 @@
+# no tests yet
+stages:
+  - test
+  - build
+
+container:
+  image: docker:latest
+  stage: build
+  tags:
+    - docker
+  script:
+    - docker build --tag $CI_REGISTRY_IMAGE/$CI_PROJECT_NAME .
+    - docker login --username $CI_REGISTRY_USER --password $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push $CI_REGISTRY_IMAGE/$CI_PROJECT_NAME
+  only:
+    refs:
+      - branches
+    changes:
+      - filecense.py
+      - Dockerfile
+      - .gitlab-ci.yml
