@@ -2334,8 +2334,6 @@ def main():
     ignoredirs = ignore_items()
     ignoredirs.add_item(".git", "simple")
     ignoredirs.add_item("testdata", "simple")
-    ignoredirs.add_item("go.sum", "simple")
-    ignoredirs.add_item("go.mod", "simple")
     ignoredirs.add_item(r"^\..+", "regex")
     if args.skipdir is not None:
         for sd in args.skipdir:
@@ -2348,6 +2346,8 @@ def main():
     ignorefiles.add_item(r"^.+\.txt$", "regex")  # skip txt files
     ignorefiles.add_item(r"^\..+", "regex")  # skip hidden files
     ignorefiles.add_item(r"^\w+$", "regex")  # skip binaries
+    ignorefiles.add_item("go.sum", "simple")
+    ignorefiles.add_item("go.mod", "simple")
     if args.skipfile is not None:
         for sf in args.skipfile:
             if args.regex:
