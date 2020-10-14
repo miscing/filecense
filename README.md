@@ -9,7 +9,8 @@ You can use the docker image in ci/cd, just pass the license holder name as 'Jos
 
 ### USAGE:
 
-```usage: filecense [-h] [-d DATE] [-l LICENSE] [-list] [-ln LICENSE_FILE_NAME]
+```
+usage: filecense [-h] [-d DATE] [-l LICENSE] [-list] [-ln LICENSE_FILE_NAME]
                  [-sd SKIPDIR [SKIPDIR ...]] [-sf SKIPFILE [SKIPFILE ...]] [-re] [-p PATH]
                  [-f FORMAT] [-c COMMENT] [-v]
                  license_holder
@@ -40,5 +41,5 @@ optional arguments:
                         places provided string at the front of every sentence of top
                         template, overrides format option
   -v, --verbose         increased verbosity
-  ```
+```
 
