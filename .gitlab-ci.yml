@@ -1,3 +1,4 @@
+# no tests yet
 stages:
   - test
   - build
