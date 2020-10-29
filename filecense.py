@@ -2344,6 +2344,7 @@ def main():
     ignorefiles = ignore_items()
     ignorefiles.add_item(r"README\.*\w{0,5}$", "regex")
     ignorefiles.add_item(r"^.+\.txt$", "regex")  # skip txt files
+    ignorefiles.add_item(r"^.+\.xml$", "regex")  # skip xml definitions
     ignorefiles.add_item(r"^\..+", "regex")  # skip hidden files
     ignorefiles.add_item(r"^\w+$", "regex")  # skip binaries
     ignorefiles.add_item("go.sum", "simple")
