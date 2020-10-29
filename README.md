@@ -1,8 +1,10 @@
 # Filecense
 
-Simple python script that recusively walks directory and adds license header at top and full text into a seperate file. See '-h' for usage information
+Simple python script that recursively walks directory and adds license header at top and full text into a separate file. See '-h' for usage information
 
-You can use the docker image in ci/cd, just pass the license holder name as 'Joseph Connor' when you run it, it will automatically attempt to add the license to the directory of the current project.
+Docker image at: `registry.gitlab.com/miscing/filecense/filecense`
+
+You can use the docker image for ci/cd, just pass the license holder name as 'Joseph Connor' when you run it, it will automatically attempt to add the license to the directory of the current project. The syntax is thus `docker/podman run registry.gitlab.com/miscing/filecense/filecense "Joseph Connor" [options]`
 
 ## NOTES:
  - `license_holder` argument must come before options with multiple values
