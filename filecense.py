@@ -2334,6 +2334,8 @@ def main():
     ignoredirs = ignore_items()
     ignoredirs.add_item(".git", "simple")
     ignoredirs.add_item("testdata", "simple")
+    ignoredirs.add_item("node_modules", "simple")
+    ignoredirs.add_item("dist", "simple")
     ignoredirs.add_item(r"^\..+", "regex")
     if args.skipdir is not None:
         for sd in args.skipdir:
@@ -2345,9 +2347,14 @@ def main():
     ignorefiles.add_item(r"README\.*\w{0,5}$", "regex")
     ignorefiles.add_item(r"^.+\.txt$", "regex")  # skip txt files
     ignorefiles.add_item(r"^.+\.xml$", "regex")  # skip xml definitions
+    ignorefiles.add_item(r"^.+\.json$", "regex")  # skip json definitions
+    ignorefiles.add_item(r"^.+\.jpg$", "regex")  # skip json definitions
+    ignorefiles.add_item(r"^.+\.png$", "regex")  # skip json definitions
+    ignorefiles.add_item(r"^.+\.html$", "regex")  # skip html definitions
     ignorefiles.add_item(r"^\..+", "regex")  # skip hidden files
     ignorefiles.add_item(r"^\w+$", "regex")  # skip binaries
     ignorefiles.add_item("go.sum", "simple")
+    ignorefiles.add_item("favicon.ico", "simple")
     ignorefiles.add_item("go.mod", "simple")
     if args.skipfile is not None:
         for sf in args.skipfile:
@@ -2368,12 +2375,14 @@ def main():
             if args.comment == "":
                 formats = {
                         "py": "#",
+                        "scss": "//",
                         "js": "//",
                         "ts": "//",
                         "cpp": "//",
                         "c": "//",
                         "C": "//",
-                        "go": "//"
+                        "go": "//",
+                        "yml": "#"
                         }
                 if args.format != "":
                     try:
