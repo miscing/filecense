@@ -2350,7 +2350,9 @@ def main():
     ignorefiles.add_item(r"^.+\.json$", "regex")  # skip json definitions
     ignorefiles.add_item(r"^.+\.jpg$", "regex")  # skip json definitions
     ignorefiles.add_item(r"^.+\.png$", "regex")  # skip json definitions
-    ignorefiles.add_item(r"^.+\.html$", "regex")  # skip html definitions
+    ignorefiles.add_item(r"^.+\.html$", "regex")  # skip html definitions because commenting them is hard
+    ignorefiles.add_item(r"^.+\.yml$", "regex")  # skip yaml definitions
+    ignorefiles.add_item(r"^.+\.yaml$", "regex")  # skip yaml definitions
     ignorefiles.add_item(r"^\..+", "regex")  # skip hidden files
     ignorefiles.add_item(r"^\w+$", "regex")  # skip binaries
     ignorefiles.add_item("go.sum", "simple")
