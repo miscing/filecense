@@ -2355,9 +2355,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("license_holder",
                         help="Name of licence holder."
-                        "use quotation marks to include whitespace\n"
+                        "use quotation marks to include whitespace. Place"
+                        " as first argument for safe usage with other flags\n"
                         "Default license: EUPL",
-                        nargs='?', default="")
+                        nargs=argparse.REMAINDER, default="")
     parser.add_argument("-p", "--path",
                         help="Specifies path to parse "
                         "defaults to current directory",
@@ -2411,10 +2412,12 @@ def main():
         print_licenses()
 
     # get license holder if not provided
-    if args.license_holder == "":
-        args.license_holder = get_license_holder()
+    if len(args.license_holder) == 0:
+        license_holder = get_license_holder()
+    else:
+        license_holder = " ".join(args.license_holder)
     if args.verbose:
-        print("License holder: ", args.license_holder)
+        print("License holder: ", license_holder)
 
     # print date to be used
     if args.verbose:
@@ -2458,7 +2461,7 @@ def main():
         else:
             format_str = args.comment
         top = comment_out(lic[0], format_str) % (args.date,
-                                                 args.license_holder)
+                                                 license_holder)
         if not already_has_license(f, top):
             write_top(top, f)
         else:

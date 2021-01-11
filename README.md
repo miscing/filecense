@@ -10,6 +10,10 @@ You can use the docker image for ci/cd, just pass the license holder name as 'Jo
  - Automatic source code language detection (by extension), and correct commenting
  - Ignores files that should not have a license, and you can use flags to add ignorables.
 
+## Notes:
+ - Some flags allow multiple items, pass license holder as first argument when using them
+ - Use quotes around whitespace in license holder
+
 ### USAGE:
 
 ```
