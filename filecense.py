@@ -2545,9 +2545,8 @@ def comment_out(text, comment):
         if input == "":
             return comment[0]+' '+comment[1]
         return comment[0]+' '+input+' '+comment[1]
-    if not isinstance(comment, list):
-        raise ValueError("comment syntax must be an array")
-
+    if not isinstance(comment, list) or len(comment) > 2:
+        raise ValueError("incorrect comment arg, must be array of 1 or 2")
     if len(comment) == 1:
         line_maker = comment_left
     elif len(comment) == 2:

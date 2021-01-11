@@ -269,7 +269,8 @@ and then the end
         write_top(comment_out(euplTop, ["//"]) % (date, name), dst_path)
         with open(dst_path) as f:
             dst_content = f.read()
-        self.assertEqual(dst_content, self.euplCommented % (date, name)+src_content)
+        self.assertEqual(dst_content,
+                         self.euplCommented % (date, name)+src_content)
         os.remove(dst_path)
 
     def test_comment_out(self):
