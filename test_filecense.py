@@ -209,7 +209,8 @@ and then the end
 <!-- -->
 """
 
-        cls.euplCommented = """// Copyright %d %s
+        cls.euplCommented = """//
+// Copyright %d %s
 //
 //  Licensed under the EUPL, Version 1.2 or – as soon they
 // will be approved by the European Commission - subsequent
@@ -226,7 +227,10 @@ and then the end
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
 // express or implied.
 //  See the Licence for the specific language governing
-// permissions and limitations under the Licence."""
+// permissions and limitations under the Licence.
+//
+
+"""
 
         cls.syntax_and_hardcoded_text = [
                 (["#"], hashtag),
@@ -237,12 +241,14 @@ and then the end
     def test_already_has_license(self):
         dst_path = "test_file_should_not_exist.go"
         src_path = "./testdata/sourceFile.go"
-        for s, ht in self.syntax_and_hardcoded_text:
-            copyfile(src_path, dst_path)
-            write_top(comment_out(self.uncommented, s), dst_path)
-            self.assertTrue(already_has_license(dst_path, ht))
         copyfile(src_path, dst_path)
-        self.assertFalse(already_has_license(dst_path, ht))
+        name = "John Doe"
+        date = datetime.now().year
+        top = comment_out(euplTop, ["//"]) % (date, name)
+        self.assertFalse(already_has_license(dst_path, top))
+        write_top(top, dst_path)
+        self.assertTrue(already_has_license(dst_path, top))
+        os.remove(dst_path)
 
     def test_write_top(self):
         dst_path = "test_file_should_not_exist.go"
@@ -256,14 +262,15 @@ and then the end
                 dst_content = f.read()
             self.assertEqual(ht+"\n"+src_content, dst_content)
             os.remove(dst_path)
+        # same but using actual license
         copyfile(src_path, dst_path)
         name = "John Doe"
         date = datetime.now().year
-        write_top(comment_out(self.euplCommented, "//") % (date, name), dst_path)
+        write_top(comment_out(euplTop, ["//"]) % (date, name), dst_path)
         with open(dst_path) as f:
             dst_content = f.read()
-        print(dst_content, self.euplCommented % (date, name))
-        self.assertEqual(dst_content, self.euplCommented % (date, name))
+        self.assertEqual(dst_content, self.euplCommented % (date, name)+src_content)
+        os.remove(dst_path)
 
     def test_comment_out(self):
         for s, ht in self.syntax_and_hardcoded_text:
