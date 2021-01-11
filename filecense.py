@@ -2355,7 +2355,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("license_holder",
                         help="Name of licence holder."
-                        "use quotation marks to include whitespace")
+                        "use quotation marks to include whitespace\n"
+                        "Default license: EUPL",
+                        nargs=argparse.REMAINDER)
     parser.add_argument("-d", "--date",
                         help="Year to use, no parsing",
                         default=datetime.now().year)
@@ -2402,11 +2404,21 @@ def main():
     args = parser.parse_args()
 
     # print licenses and exit
-    if (args.listlicenses):
+    if args.listlicenses:
         print_licenses()
 
+    # get license holder if not provided
+    if len(args.license_holder) == 0:
+        license_holder = get_license_holder()
+    else:
+        # collect license holder array into one string
+        # hack to make positional arg optional
+        license_holder = " ".join(args.license_holder)
+    if args.verbose:
+        print("License holder: ", license_holder)
+
     # print date to be used
-    if (args.verbose):
+    if args.verbose:
         print("using date: ", args.date)
 
     # Set build-in items to ignore
@@ -2447,7 +2459,7 @@ def main():
         else:
             format_str = args.comment
         top = comment_out(lic[0], format_str) % (args.date,
-                                                 args.license_holder)
+                                                 license_holder)
         if not already_has_license(f, top):
             write_top(top, f)
         else:
@@ -2456,6 +2468,10 @@ def main():
     # add full text
     location = find_root(args.path)
     write_license(lic[1], location, args.license_file_name)
+
+
+def get_license_holder():
+    return input("Please provide name to use on license:\n")
 
 
 def add_ignores(args_and_obj, regex):
