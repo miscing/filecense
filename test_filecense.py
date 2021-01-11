@@ -1,9 +1,10 @@
 import unittest
 from filecense import finder, ignore_items, file_format, find_root
-from filecense import already_has_license
+from filecense import already_has_license, euplTop
 from filecense import const_ignore_files, const_ignore_dirs
 from filecense import write_full, write_top, syntax_arg, comment_out
 import os
+from datetime import datetime
 from shutil import copyfile
 
 testfiles = [
@@ -208,6 +209,25 @@ and then the end
 <!-- -->
 """
 
+        cls.euplCommented = """// Copyright %d %s
+//
+//  Licensed under the EUPL, Version 1.2 or – as soon they
+// will be approved by the European Commission - subsequent
+// versions of the EUPL (the "Licence");
+//  You may not use this work except in compliance with the
+// Licence.
+//  You may obtain a copy of the Licence at:
+//
+//  https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+//
+//  Unless required by applicable law or agreed to in
+// writing, software distributed under the Licence is
+// distributed on an "AS IS" basis,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+// express or implied.
+//  See the Licence for the specific language governing
+// permissions and limitations under the Licence."""
+
         cls.syntax_and_hardcoded_text = [
                 (["#"], hashtag),
                 (["//"], slashslash),
@@ -236,6 +256,14 @@ and then the end
                 dst_content = f.read()
             self.assertEqual(ht+"\n"+src_content, dst_content)
             os.remove(dst_path)
+        copyfile(src_path, dst_path)
+        name = "John Doe"
+        date = datetime.now().year
+        write_top(comment_out(self.euplCommented, "//") % (date, name), dst_path)
+        with open(dst_path) as f:
+            dst_content = f.read()
+        print(dst_content, self.euplCommented % (date, name))
+        self.assertEqual(dst_content, self.euplCommented % (date, name))
 
     def test_comment_out(self):
         for s, ht in self.syntax_and_hardcoded_text:

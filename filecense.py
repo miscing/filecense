@@ -23,7 +23,7 @@
 
 import os
 import pathlib
-import datetime
+from datetime import datetime
 import re
 import argparse
 
@@ -2358,7 +2358,7 @@ def main():
                         "use quotation marks to include whitespace")
     parser.add_argument("-d", "--date",
                         help="Year to use, no parsing",
-                        default=datetime.datetime.now().year)
+                        default=datetime.now().year)
     parser.add_argument("-l", "--license",
                         help="Specifies license to add",
                         default="eupl")
@@ -2449,6 +2449,8 @@ def main():
         top = comment_out(lic[0], format_str)
         if not already_has_license(f, top):
             write_top(top % (args.date, args.license_holder), f)
+        else:
+            print("file ", f, " already has license, skipping")
 
     # add full text
     location = find_root(args.path)
@@ -2497,7 +2499,7 @@ def write_license(license, location, filename):
     try:
         write_full(license, location, filename, "x")
     except FileExistsError:
-        resp = input("Full license already exists, overwrite? (y/n)")
+        resp = input("Full license already exists, overwrite? (y/n)\n")
         if resp != 'y':
             raise SystemExit
         else:
@@ -2543,6 +2545,9 @@ def comment_out(text, comment):
         if input == "":
             return comment[0]+' '+comment[1]
         return comment[0]+' '+input+' '+comment[1]
+    if not isinstance(comment, list):
+        raise ValueError("comment syntax must be an array")
+
     if len(comment) == 1:
         line_maker = comment_left
     elif len(comment) == 2:
