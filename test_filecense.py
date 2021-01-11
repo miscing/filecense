@@ -1,5 +1,6 @@
 import unittest
 from filecense import finder, ignore_items, file_format, find_root
+from filecense import already_has_license
 from filecense import const_ignore_files, const_ignore_dirs
 from filecense import write_full, write_top, syntax_arg, comment_out
 import os
@@ -212,6 +213,16 @@ and then the end
                 (["//"], slashslash),
                 (["<!--", "-->"], html),
         ]
+
+    def test_already_has_license(self):
+        dst_path = "test_file_should_not_exist.go"
+        src_path = "./testdata/sourceFile.go"
+        for s, ht in self.syntax_and_hardcoded_text:
+            copyfile(src_path, dst_path)
+            write_top(comment_out(self.uncommented, s), dst_path)
+            self.assertTrue(already_has_license(dst_path, ht))
+        copyfile(src_path, dst_path)
+        self.assertFalse(already_has_license(dst_path, ht))
 
     def test_write_top(self):
         dst_path = "test_file_should_not_exist.go"

@@ -2447,7 +2447,8 @@ def main():
         else:
             format_str = args.comment
         top = comment_out(lic[0], format_str)
-        write_top(top % (args.date, args.license_holder), f)
+        if not already_has_license(f, top):
+            write_top(top % (args.date, args.license_holder), f)
 
     # add full text
     location = find_root(args.path)
@@ -2506,6 +2507,11 @@ def write_license(license, location, filename):
 def write_full(text, location, name, open_opt):
     with open(os.path.join(location, name), open_opt) as f:
         f.write(text)
+
+
+def already_has_license(filepath, top):
+    with open(filepath, "r") as f:
+        return f.read().startswith(top)
 
 
 def write_top(ntop, path):
