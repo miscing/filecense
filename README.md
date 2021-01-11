@@ -11,44 +11,48 @@ You can use the docker image for ci/cd, just pass the license holder name as 'Jo
  - Ignores files that should not have a license, and you can use flags to add ignorables.
 
 ## Notes:
- - Some flags allow multiple items, pass license holder as first argument when using them
- - Use quotes around whitespace in license holder
+ - Remaining arguments are license holder
+ - Some flags allow multiple items, make sure there is some flag between them and license holder (flag `-e` is provided for this that does nothing)
 
 ### USAGE:
 
 ```
-usage: filecense.py [-h] [-d DATE] [-l LICENSE] [-list]
-                    [-ln LICENSE_FILE_NAME] [-sd SKIPDIR [SKIPDIR ...]]
-                    [-sf SKIPFILE [SKIPFILE ...]] [-re] [-p PATH]
-                    [-fmt FORMAT [FORMAT ...]] [-c COMMENT] [-v]
-                    license_holder
+usage: filecense.py [-h] [-p PATH] [-d DATE] [-l LICENSE] [-f] [-list]
+                    [-ln LICENSE_FILE_NAME] [-e] [-sd SKIPDIR [SKIPDIR ...]]
+                    [-sf SKIPFILE [SKIPFILE ...]] [-re] [-fmt FORMAT [FORMAT ...]]
+                    [-c COMMENT] [-v]
+                    ...
 
 positional arguments:
-  license_holder        Name of licence holder.use quotation marks to include
-                        whitespace
+  license_holder        Name of licence holder.use quotation marks to include whitespace.
+                        Place as first argument for safe usage with other flags. Default
+                        license: EUPL
 
 optional arguments:
   -h, --help            show this help message and exit
-  -d DATE, --date DATE  Year to use, no parsing
+  -p PATH, --path PATH  Specifies path to parse, defaults to current directory
+  -d DATE, --date DATE  Date to use, used as provided
   -l LICENSE, --license LICENSE
                         Specifies license to add
+  -f, --force           Overrides checks and user input.
   -list, --listlicenses
                         Lists available licenses
   -ln LICENSE_FILE_NAME, --license_file_name LICENSE_FILE_NAME
                         Specifies name of license file, default LICENSE
+  -e, --end             Does nothing, use to end a multi item flag before providing license
+                        holder
   -sd SKIPDIR [SKIPDIR ...], --skipdir SKIPDIR [SKIPDIR ...]
-                        Sets directories to skip. Space seperate multiple
-                        items
+                        Sets directories to skip. Make sure you have a flag before license
+                        holder
   -sf SKIPFILE [SKIPFILE ...], --skipfile SKIPFILE [SKIPFILE ...]
-                        Sets files to skip. Space seperate multiple items
-  -re, --regex          Use with skip flags, causes arguments to be
-                        interpreted as regex strings
-  -p PATH, --path PATH  Specifies path to parse defaults to current directory
+                        Sets files to skip. Make sure you have a flag before license holder
+  -re, --regex          Use with skip flags, causes arguments to be interpreted as regex
+                        strings
   -fmt FORMAT [FORMAT ...], --format FORMAT [FORMAT ...]
-                        Add filetype comment syntax. EXT/REGEX=SYNTAX. Space
-                        seperate multiple items. Example: '-f .ext=!!
-                        Dockerfile=#' Use '.ext' for extension detection,
-                        otherwise will be interpreted as a regex string
+                        Add filetype comment syntax. EXT/REGEX=SYNTAX. Make sure you have a
+                        flag before license holder. Example: '-f .ext=!! Dockerfile=#' Use
+                        '.ext' for extension detection, otherwise will be interpreted as a
+                        regex string
   -c COMMENT, --comment COMMENT
                         Set comment syntax, replaces filetype detection
   -v, --verbose         Increased verbosity

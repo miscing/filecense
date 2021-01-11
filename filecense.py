@@ -2356,15 +2356,15 @@ def main():
     parser.add_argument("license_holder",
                         help="Name of licence holder."
                         "use quotation marks to include whitespace. Place"
-                        " as first argument for safe usage with other flags\n"
+                        " as first argument for safe usage with other flags. "
                         "Default license: EUPL",
                         nargs=argparse.REMAINDER, default="")
     parser.add_argument("-p", "--path",
-                        help="Specifies path to parse "
+                        help="Specifies path to parse, "
                         "defaults to current directory",
                         default=".")
     parser.add_argument("-d", "--date",
-                        help="Year to use, no parsing",
+                        help="Date to use, used as provided",
                         default=datetime.now().year)
     parser.add_argument("-l", "--license",
                         help="Specifies license to add",
@@ -2378,13 +2378,17 @@ def main():
     parser.add_argument("-ln", "--license_file_name",
                         help="Specifies name of license file, default LICENSE",
                         default="LICENSE")
+    parser.add_argument("-e", "--end",
+                        help="Does nothing, use to end a multi item flag "
+                        "before providing license holder",
+                        action="store_true")
     parser.add_argument("-sd", "--skipdir",
                         help="Sets directories to skip. "
-                        "Space seperate multiple items",
+                        "Make sure you have a flag before license holder",
                         nargs="+", action="extend")
     parser.add_argument("-sf", "--skipfile",
                         help="Sets files to skip. "
-                        "Space seperate multiple items",
+                        "Make sure you have a flag before license holder",
                         nargs="+", action="extend")
     parser.add_argument("-re", "--regex",
                         help="Use with skip flags, "
@@ -2394,7 +2398,7 @@ def main():
                         type=syntax_arg,
                         help="Add filetype comment syntax. "
                         "EXT/REGEX=SYNTAX. "
-                        "Space seperate multiple items. "
+                        "Make sure you have a flag before license holder. "
                         "Example: '-f .ext=!! Dockerfile=#' "
                         "Use '.ext' for extension detection, "
                         "otherwise will be interpreted as a regex string",
@@ -2406,14 +2410,15 @@ def main():
                         help="Increased verbosity",
                         action="store_true")
     args = parser.parse_args()
+    i_details = implementation_details(args.verbose, args.regex, args.force)
 
     # print licenses and exit
     if args.listlicenses:
-        print_licenses()
+        i_details.print_licenses()
 
     # get license holder if not provided
     if len(args.license_holder) == 0:
-        license_holder = get_license_holder()
+        license_holder = i_details.get_license_holder()
     else:
         license_holder = " ".join(args.license_holder)
     if args.verbose:
@@ -2427,10 +2432,10 @@ def main():
     ignoredirs = ignore_items(const_ignore_dirs)
     ignorefiles = ignore_items(const_ignore_files)
     # Set commandline in items to ignore
-    add_ignores([
+    i_details.add_ignores([
             (args.skipdir, ignoredirs),
             (args.skipfile, ignorefiles)
-            ], args.regex)
+            ])
 
     # add command line formats
     formats = file_format()
@@ -2451,7 +2456,7 @@ def main():
     files = finder(args.verbose, ignoredirs, ignorefiles).get_files(args.path)
 
     # Double check user wants to continue
-    confirm_continue(files, args.verbose)
+    i_details.confirm_continue(files)
 
     # add license to each source file
     for f in files:
@@ -2469,40 +2474,62 @@ def main():
 
     # add full text
     location = find_root(args.path)
-    write_license(lic[1], location, args.license_file_name)
+    i_details.write_license(lic[1], location, args.license_file_name)
 
 
-def get_license_holder():
-    return input("Please provide name to use on license:\n")
+# puts together parsed flags and some basic operations
+# meant to keep details out of the main function
+class implementation_details:
+    def __init__(self, verbose, regex, force):
+        self.verbose = verbose
+        self.regex = regex
+        self.force = force
 
+    def get_license_holder(self):
+        if self.force:
+            raise RuntimeError("force flag requires license holder"
+                               "to be provided in command line")
+        return input("Please provide name to use on license:\n")
 
-def add_ignores(args_and_obj, regex):
-    for skip_args, obj in args_and_obj:
-        if skip_args is not None:
-            for ignore in skip_args:
-                if regex:
-                    obj.add_item(ignore, True)
-                else:
-                    obj.add_item(ignore)
+    def add_ignores(self, args_and_obj):
+        for skip_args, obj in args_and_obj:
+            if skip_args is not None:
+                for ignore in skip_args:
+                    if self.regex:
+                        obj.set_regex(ignore)
+                    else:
+                        obj.set_simple(ignore)
 
+    def confirm_continue(self, files):
+        if self.verbose:
+            print("About to add licence to:")
+            for f in files:
+                print("\t", f)
+        else:
+            print("Adding license to ", len(files), " files")
+        if self.force:
+            return
+        response = input("continue? (y/N)\n")
+        if response != 'y':
+            print("execution stopped by user")
+            raise SystemExit
 
-def confirm_continue(files, verbose):
-    if verbose:
-        print("About to add licence to:")
-        for f in files:
-            print("\t", f)
-    else:
-        print("Adding license to ", len(files), " files")
-    response = input("continue? (y/N)\n")
-    if response != 'y':
-        print("execution stopped by user")
+    def print_licenses():
+        for lic in license:
+            print(lic)
         raise SystemExit
 
-
-def print_licenses():
-    for lic in license:
-        print(lic)
-    raise SystemExit
+    def write_license(self, license, location, filename):
+        try:
+            write_full(license, location, filename, "x")
+        except FileExistsError:
+            if self.force:
+                return
+            resp = input("Full license already exists, overwrite? (y/n)\n")
+            if resp != 'y':
+                raise SystemExit
+            else:
+                write_full(license, location, filename, "w")
 
 
 def find_root(path):
@@ -2512,17 +2539,6 @@ def find_root(path):
             if d == ".git":
                 return os.path.abspath(root)
     return os.path.abspath(path)
-
-
-def write_license(license, location, filename):
-    try:
-        write_full(license, location, filename, "x")
-    except FileExistsError:
-        resp = input("Full license already exists, overwrite? (y/n)\n")
-        if resp != 'y':
-            raise SystemExit
-        else:
-            write_full(license, location, filename, "w")
 
 
 def write_full(text, location, name, open_opt):
@@ -2555,15 +2571,15 @@ def write_top(ntop, path):
 
 
 def comment_out(text, comment):
-    def comment_left(input):
-        if input == "":
+    def comment_left(text):
+        if text == "":
             return comment[0]
-        return comment[0]+' '+input
+        return comment[0]+' '+text
 
-    def comment_both(input):
-        if input == "":
+    def comment_both(text):
+        if text == "":
             return comment[0]+' '+comment[1]
-        return comment[0]+' '+input+' '+comment[1]
+        return comment[0]+' '+text+' '+comment[1]
     if not isinstance(comment, list) or len(comment) > 2:
         raise ValueError("incorrect comment arg, must be array of 1 or 2")
     if len(comment) == 1:
@@ -2637,15 +2653,12 @@ class ignore_items:
     def __iter__(self):
         return iter(self.data.keys())
 
-    def add_item(self, name, regex=False):
-        if regex:
-            self.set_regex(name)
-        else:
-            self.set_simple(name)
-
     def add_items(self, tuples):
         for k, v in tuples:
-            self.add_item(k, v)
+            if v == "regex":
+                self.set_regex(k)
+            else:
+                self.set_simple(k)
 
     def ignore(self, item):
         for key in self:
