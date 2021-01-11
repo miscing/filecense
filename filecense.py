@@ -2446,9 +2446,10 @@ def main():
             format_str = formats.comment_syntax(f)
         else:
             format_str = args.comment
-        top = comment_out(lic[0], format_str)
+        top = comment_out(lic[0], format_str) % (args.date,
+                                                 args.license_holder)
         if not already_has_license(f, top):
-            write_top(top % (args.date, args.license_holder), f)
+            write_top(top, f)
         else:
             print("file ", f, " already has license, skipping")
 
