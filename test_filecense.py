@@ -152,17 +152,17 @@ class TestFinder(unittest.TestCase):
             break
         for _, _, f in all_files:
             self.finder.ignoreItems(False, f)
-            self.assertEqual(trimmedFiles, f)
+            self.assertEqual(trimmedFiles.sort(), f.sort())
             break
 
     def test_ignore(self):
         all_files = self.finder.find_files("./testdata/")
         files_after_ignore = self.finder.ignore(all_files)
-        self.assertEqual(notIgnoredFiles, files_after_ignore)
+        self.assertEqual(notIgnoredFiles.sort(), files_after_ignore.sort())
 
     def test_get_files(self):
         files = self.finder.get_files("./testdata/")
-        self.assertEqual(notIgnoredFiles, files)
+        self.assertEqual(notIgnoredFiles.sort(), files.sort())
 
 
 class TestFileFormat(unittest.TestCase):
