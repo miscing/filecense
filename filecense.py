@@ -2384,7 +2384,7 @@ def main():
                         help="Specifies path to parse "
                         "defaults to current directory",
                         default=".")
-    parser.add_argument("-f", "--format",
+    parser.add_argument("-fmt", "--format",
                         type=syntax_arg,
                         help="Add filetype comment syntax. "
                         "EXT/REGEX=SYNTAX. "
