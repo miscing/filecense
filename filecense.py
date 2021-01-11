@@ -2364,7 +2364,8 @@ def main():
                         "defaults to current directory",
                         default=".")
     parser.add_argument("-d", "--date",
-                        help="Date to use, used as provided",
+                        help="Date as year (int) to use",
+                        type=int,
                         default=datetime.now().year)
     parser.add_argument("-l", "--license",
                         help="Specifies license to add",
@@ -2547,8 +2548,12 @@ def write_full(text, location, name, open_opt):
 
 
 def already_has_license(filepath, top):
+    regex = re.compile("^#!/.+$")
     with open(filepath, "r") as f:
-        return f.read().startswith(top)
+        content = f.read().split("\n")
+        if regex.match(content[0]):
+            content = content[1:]
+        return "\n".join(content).startswith(top)
 
 
 def write_top(ntop, path):
