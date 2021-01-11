@@ -22,6 +22,7 @@
 
 
 import os
+import pathlib
 import datetime
 import re
 import argparse
@@ -2295,161 +2296,308 @@ Code from exclusive appropriation.
 All other changes or additions to this Appendix require the production of a new
 EUPL version."""
 
+license = {
+        "eupl": [euplTop, euplFull],
+        "gpl3": [gpl3Top, gpl3],
+        "gpl": [gpl3Top, gpl3],
+        "mit": [mitTop, mitFull],
+        "agpl": [agplTop, agplFull],
+        "mozilla": [mozillaTop, mozillaFull],
+        "beer": [beerTop, beerFull],
+        "unlicense": [unlicenseTop, unlicenseFull],
+        }
 
+const_ignore_dirs = [
+        (".git", "simple"),
+        ("testdata", "simple"),
+        ("node_modules", "simple"),
+        ("dist", "simple"),
+        ("__pycache__", "simple"),
+        (r"^\..+", "regex"),
+        ]
+
+const_ignore_files = [
+        (r"README\.*\w{0,5}$", "regex"),  # skip REAME
+        (r"^.+\.txt$", "regex"),  # skip txt files
+        (r"^.+\.xml$", "regex"),  # skip xml definitions
+        (r"^.+\.json$", "regex"),  # skip json definitions
+        (r"^.+\.jpg$", "regex"),  # skip jpg definitions
+        (r"^.+\.png$", "regex"),  # skip png definitions
+        (r"^.+\.yml$", "regex"),  # skip yaml definitions
+        (r"^.+\.yaml$", "regex"),  # skip yaml definitions
+        (r"^\..+", "regex"),  # skip hidden files
+        (r"^\w+$", "regex"),  # skip binaries
+        ("go.sum", "simple"),  # go sum files
+        ("favicon.ico", "simple"),  # website icon file
+        ("go.mod", "simple"),  # go module file
+        ]
+
+comment_format_by_ext = {
+        "py": ["#"],
+        "scss": ["//"],
+        "js": ["//"],
+        "ts": ["//"],
+        "cpp": ["//"],
+        "c": ["//"],
+        "C": ["//"],
+        "go": ["//"],
+        "yml": ["#"],
+        "html": ["<!--", "-->"],
+        "css": ["/*", "*/"],
+        }
+
+comment_format_by_filere = [  # these are regex strings
+        ("Dockerfile", ["#"]),  # this exists as reference, ignored by prog
+        ]
 
 
 def main():
-    license = {
-            "eupl": [euplTop, euplFull],
-            "gpl3": [gpl3Top, gpl3],
-            "gpl": [gpl3Top, gpl3],
-            "mit": [mitTop, mitFull],
-            "agpl": [agplTop, agplFull],
-            "mozilla": [mozillaTop, mozillaFull],
-            "beer": [beerTop, beerFull],
-            "unlicense": [unlicenseTop, unlicenseFull],
-            }
     parser = argparse.ArgumentParser()
-    parser.add_argument("license_holder", help="name of licence holder, use quotation marks to include whitespace")
-    parser.add_argument("-d", "--date", help="year to use, no sanity checks will be used literally", default=datetime.datetime.now().year)
-    parser.add_argument("-l", "--license", help="specifies license to add", default="eupl" )
-    parser.add_argument("-list", "--listlicenses", help="lists available licenses", action="store_true")
-    parser.add_argument("-ln", "--license_file_name", help="specifies name of license file, default LICENSE", default="LICENSE" )
-    parser.add_argument("-sd", "--skipdir", help="sets directories to skip", nargs="+")
-    parser.add_argument("-sf", "--skipfile", help="sets files to skip", nargs="+")
-    parser.add_argument("-re", "--regex", help="together with skip flags causes arguments to be interpreted as regex strings", action="store_true")
-    parser.add_argument("-p", "--path", help="specifies path to parse, default is current directory", default=".")
-    parser.add_argument("-f", "--format", help="specifies comment syntax based on language, such as py for python comments. Usually unnecessary", default="")
-    parser.add_argument("-c", "--comment", help="places provided string at the front of every sentence  of top template, overrides format option", default="")
-    parser.add_argument("-v", "--verbose", help="increased verbosity", action="store_true")
+    parser.add_argument("license_holder",
+                        help="Name of licence holder."
+                        "use quotation marks to include whitespace")
+    parser.add_argument("-d", "--date",
+                        help="Year to use, no parsing",
+                        default=datetime.datetime.now().year)
+    parser.add_argument("-l", "--license",
+                        help="Specifies license to add",
+                        default="eupl")
+    parser.add_argument("-list", "--listlicenses",
+                        help="Lists available licenses",
+                        action="store_true")
+    parser.add_argument("-ln", "--license_file_name",
+                        help="Specifies name of license file, default LICENSE",
+                        default="LICENSE")
+    parser.add_argument("-sd", "--skipdir",
+                        help="Sets directories to skip. "
+                        "Space seperate multiple items",
+                        nargs="+")
+    parser.add_argument("-sf", "--skipfile",
+                        help="Sets files to skip. "
+                        "Space seperate multiple items",
+                        nargs="+")
+    parser.add_argument("-re", "--regex",
+                        help="Use with skip flags, "
+                        "causes arguments to be interpreted as regex strings",
+                        action="store_true")
+    parser.add_argument("-p", "--path",
+                        help="Specifies path to parse "
+                        "defaults to current directory",
+                        default=".")
+    parser.add_argument("-f", "--format",
+                        type=syntax_arg,
+                        help="Add filetype comment syntax. "
+                        "EXT/REGEX=SYNTAX. "
+                        "Space seperate multiple items. "
+                        "Example: '-f .ext=!! Dockerfile=#' "
+                        "Use '.ext' for extension detection, "
+                        "otherwise will be interpreted as a regex string",
+                        nargs="+")
+    parser.add_argument("-c", "--comment",
+                        help="Set comment syntax, replaces filetype detection",
+                        default="")
+    parser.add_argument("-v", "--verbose",
+                        help="Increased verbosity",
+                        action="store_true")
     args = parser.parse_args()
 
-    if (args.verbose):
-        print("using system date year: ", args.date)
+    # print licenses and exit
     if (args.listlicenses):
-        for lic in license:
-            print(lic)
-        return
-    # Set up items to ignore
-    ignoredirs = ignore_items()
-    ignoredirs.add_item(".git", "simple")
-    ignoredirs.add_item("testdata", "simple")
-    ignoredirs.add_item("node_modules", "simple")
-    ignoredirs.add_item("dist", "simple")
-    ignoredirs.add_item(r"^\..+", "regex")
-    if args.skipdir is not None:
-        for sd in args.skipdir:
-            if args.regex:
-                ignoredirs.add_item(sd, "regex")
-            else:
-                ignoredirs.add_item(sd, "simple")
-    ignorefiles = ignore_items()
-    ignorefiles.add_item(r"README\.*\w{0,5}$", "regex")
-    ignorefiles.add_item(r"^.+\.txt$", "regex")  # skip txt files
-    ignorefiles.add_item(r"^.+\.xml$", "regex")  # skip xml definitions
-    ignorefiles.add_item(r"^.+\.json$", "regex")  # skip json definitions
-    ignorefiles.add_item(r"^.+\.jpg$", "regex")  # skip json definitions
-    ignorefiles.add_item(r"^.+\.png$", "regex")  # skip json definitions
-    ignorefiles.add_item(r"^.+\.html$", "regex")  # skip html definitions because commenting them is hard
-    ignorefiles.add_item(r"^.+\.yml$", "regex")  # skip yaml definitions
-    ignorefiles.add_item(r"^.+\.yaml$", "regex")  # skip yaml definitions
-    ignorefiles.add_item(r"^\..+", "regex")  # skip hidden files
-    ignorefiles.add_item(r"^\w+$", "regex")  # skip binaries
-    ignorefiles.add_item("go.sum", "simple")
-    ignorefiles.add_item("favicon.ico", "simple")
-    ignorefiles.add_item("go.mod", "simple")
-    if args.skipfile is not None:
-        for sf in args.skipfile:
-            if args.regex:
-                ignorefiles.add_item(sf, "regex")
-            else:
-                ignorefiles.add_item(sf, "simple")
-    fer = finder(args.verbose, ignoredirs, ignorefiles)
-    res = fer.find_files(args.path)
+        print_licenses()
+
+    # print date to be used
+    if (args.verbose):
+        print("using date: ", args.date)
+
+    # Set build-in items to ignore
+    ignoredirs = ignore_items(const_ignore_dirs)
+    ignorefiles = ignore_items(const_ignore_files)
+    # Set commandline in items to ignore
+    add_ignores([
+            (args.skipdir, ignoredirs),
+            (args.skipfile, ignorefiles)
+            ], args.regex)
+
+    # add command line formats
+    formats = file_format()
+    if args.format is not None:
+        for target, syntax in args.skipfile:
+            formats.add(target, syntax)
+
+    # get licence
+    if args.verbose:
+        print("using licence: ", args.license)
     try:
         lic = license[args.license]
-    except:
+    except KeyError:
         print("license not supported")
-        return 2
-    else:
-        for p in res:
-            format_str = ""
-            if args.comment == "":
-                formats = {
-                        "py": "#",
-                        "scss": "//",
-                        "js": "//",
-                        "ts": "//",
-                        "cpp": "//",
-                        "c": "//",
-                        "C": "//",
-                        "go": "//",
-                        "yml": "#"
-                        }
-                if args.format != "":
-                    try:
-                        format_str = formats[args.format]
-                    except:
-                        print("specified format not supported")
-                        return 2
+        raise SystemExit
+
+    # get files and ignore some
+    files = finder(args.verbose, ignoredirs, ignorefiles).get_files(args.path)
+
+    # Double check user wants to continue
+    confirm_continue(files, args.verbose)
+
+    # add license to each source file
+    for f in files:
+        if args.comment == "":
+            # attempt filetype detection by extension
+            format_str = formats.comment_syntax(f)
+        else:
+            format_str = args.comment
+        top = comment_out(lic[0], format_str)
+        write_top(top % (args.date, args.license_holder), f)
+
+    # add full text
+    location = find_root(args.path)
+    write_license(lic[1], location, args.license_file_name)
+
+
+def add_ignores(args_and_obj, regex):
+    for skip_args, obj in args_and_obj:
+        if skip_args is not None:
+            for ignore in skip_args:
+                if regex:
+                    obj.add_item(ignore, True)
                 else:
-                    # attempt filetype detection by extension
-                    try:
-                        format_str = formats[os.path.splitext(p)[1][1:]]
-                    except:
-                        print(os.path.splitext(p)[1][1:])
-                        print("could not detect filetype (or filetype not supported, use '-c' flag or '-f' flags) of file: ", p)
-                        return 2
-
-                top = comment_out(lic[0], format_str)
-            else:
-                format_str = args.comment
-            top = comment_out(lic[0], format_str)
-            # print( top % (args.date, args.license_holder))
-            try:
-                write_top(top % (args.date, args.license_holder), p)
-            except Exception as error:
-                print("failed to write top, quitting")
-                print(error)
-                return 2
-
-        # add full text
-        tuples = os.walk(args.path, topdown=True)
-        for root, dirs, files in tuples:
-            for d in dirs:
-                if d == ".git":
-                    if (args.verbose):
-                        print("found .git directory at: ", root, " adding full license text there from presumption it's project root")
-                    write_full(lic[1], root, args.license_file_name)
+                    obj.add_item(ignore)
 
 
-def write_full(text, location, name):
-    try:
-        f = open(os.path.join(location, name), "x")
-    except:
-        print("license file of name: ", os.path.join(location, name), " exists")
-        return
+def confirm_continue(files, verbose):
+    if verbose:
+        print("About to add licence to:")
+        for f in files:
+            print("\t", f)
     else:
+        print("Adding license to ", len(files), " files")
+    response = input("continue? (y/N)\n")
+    if response != 'y':
+        print("execution stopped by user")
+        raise SystemExit
+
+
+def print_licenses():
+    for lic in license:
+        print(lic)
+    raise SystemExit
+
+
+def find_root(path):
+    tuples = os.walk(path, topdown=True)
+    for root, dirs, files in tuples:
+        for d in dirs:
+            if d == ".git":
+                return os.path.abspath(root)
+    return os.path.abspath(path)
+
+
+def write_license(license, location, filename):
+    try:
+        write_full(license, location, filename, "x")
+    except FileExistsError:
+        resp = input("Full license already exists, overwrite? (y/n)")
+        if resp != 'y':
+            raise SystemExit
+        else:
+            write_full(license, location, filename, "w")
+
+
+def write_full(text, location, name, open_opt):
+    with open(os.path.join(location, name), open_opt) as f:
         f.write(text)
-        f.close()
+
+
+def write_top(ntop, path):
+    regex = re.compile("^#!/.+$")
+    f = open(path, 'r')
+    line = f.readline()
+    mark = False
+    if regex.search(line) is not None:
+        mark = True
+        pass
+    else:
+        f.seek(0)  # reset file position
+    saved = f.read()
+    f.close()
+    f = open(path, 'w')
+    if mark:
+        f.write(line)
+    f.writelines([ntop, "\n", saved])
+    f.close()
 
 
 def comment_out(text, comment):
+    def comment_left(input):
+        if input == "":
+            return comment[0]
+        return comment[0]+' '+input
+
+    def comment_both(input):
+        if input == "":
+            return comment[0]+' '+comment[1]
+        return comment[0]+' '+input+' '+comment[1]
+    if len(comment) == 1:
+        line_maker = comment_left
+    elif len(comment) == 2:
+        line_maker = comment_both
+    else:
+        raise ValueError("comment syntax must be an array of 1 or 2")
     res = []
-    res.append(comment)
+    res.append(line_maker(""))
     for line in text.splitlines():
-        if line == "":
-            res.append(comment)
-        else:
-            res.append(comment+' '+line)
-    res.append(comment)
+        res.append(line_maker(line))
+    res.append(line_maker(""))
     res.append("")
     return "\n".join(res)
 
 
-class ignore_items(dict):
-    def __init__(self):
+def syntax_arg(arg):
+    split = arg.split("=")
+    if len(split) != 2:
+        raise ValueError("syntax arguments must be given in key=value format")
+    return (split[0], split[1])
+
+
+class file_format:
+    def __init__(self, ext=None, filere=None):
+        if ext is None:
+            self.ext = comment_format_by_ext
+        else:
+            self.ext = ext
+        if filere is None:
+            self.fileregex = comment_format_by_filere
+        else:
+            self.fileregex = filere
+
+    def add(self, target, comment_syntax):
+        if target[0] == '.':
+            self.add_ext(target[1:], comment_syntax)
+        else:
+            self.add_filere(target, comment_syntax)
+
+    def add_ext(self, ext, comment_syntax):
+        self.ext[ext] = comment_syntax
+
+    def add_filere(self, filere, comment_syntax):
+        self.fileregex.append((filere, comment_syntax))
+
+    def comment_syntax(self, name):
+        if pathlib.PurePath(name).suffix != "":
+            return self.ext[pathlib.PurePath(name).suffix[1:]]
+        else:
+            for filere, comment in self.fileregex:
+                regex = re.compile(filere)
+                if regex.match(name):
+                    return comment
+            raise ValueError("no comment syntax for given file")
+
+
+class ignore_items:
+    def __init__(self, items=None):
         self.data = {}
+        if items is not None:
+            self.add_items(items)
 
     def __setitem__(self, k, v):
         self.data[k] = v
@@ -2460,12 +2608,21 @@ class ignore_items(dict):
     def __iter__(self):
         return iter(self.data.keys())
 
-    def add_item(self, name, mode):
-        modes = {
-                "simple": self.set_simple,
-                "regex": self.set_regex
-                }
-        modes[mode](name)
+    def add_item(self, name, regex=False):
+        if regex:
+            self.set_regex(name)
+        else:
+            self.set_simple(name)
+
+    def add_items(self, tuples):
+        for k, v in tuples:
+            self.add_item(k, v)
+
+    def ignore(self, item):
+        for key in self:
+            if self[key](key, item):
+                return True
+        return False
 
     def set_simple(self, name):
         self[name] = self.simple_check
@@ -2481,16 +2638,11 @@ class ignore_items(dict):
 
     def regex_check(self, matchTo, toMatch):
         regex = re.compile(matchTo)
-        try:
-            res = regex.search(toMatch)
-        except:
-            print("error doing regex search")
-            return False
+        res = regex.search(toMatch)
+        if (res is not None):
+            return True
         else:
-            if (res is not None):
-                return True
-            else:
-                return False
+            return False
 
 
 class finder:
@@ -2499,92 +2651,35 @@ class finder:
         self.ignore_dirs = ignore_dirs
         self.ignore_files = ignore_files
 
+    def get_files(self, path):
+        return self.ignore(self.find_files(path))
+
     def find_files(self, path):
+        return os.walk(path, topdown=True)
+
+    # returns files after ignoring relevant files
+    def ignore(self, all_files):
         res = []
-        tuples = os.walk(path, topdown=True)
-        if self.verbose:
-            print("Directories to skip:")
-            for skipdir in self.ignore_dirs:
-                print("\t", end='')
-                print(skipdir)
-            print("Files to skip:")
-            for skipfile in self.ignore_files:
-                print("\t", end='')
-                print(skipfile)
-
-        for root, dirs, files in tuples:
-            if self.verbose:
-                print("\nDirs and files found:")
-                for d in dirs:
-                    print(d)
-                for f in files:
-                    print(f)
-                print()
-
-            mark = True
-            doubleBreak = False
-            while mark:  # restart from topafter deleting an element
-                i = 0
-                for d in dirs:
-                    for key in self.ignore_dirs:
-                        if (self.ignore_dirs[key](key, d)):
-                            if self.verbose:
-                                print("skipping dir: ", os.path.join(root, d), " due to: ", key)
-                            try:
-                                dirs.remove(d)
-                            except:
-                                print("failed to ignore a directory", d)
-                                return 2
-                            else:
-                                doubleBreak = True
-                                break
-                    if doubleBreak:
-                        doubleBreak = False
-                        break
-                    i += 1
-                if i >= len(dirs):
-                    mark = False
-                    break
-
+        for root, dirs, files in all_files:
+            self.ignoreItems(True, dirs)
+            self.ignoreItems(False, files)
             for f in files:
-                mark = True
-                for key in self.ignore_files:
-                    if (self.ignore_files[key](key, f)):
-                        if self.verbose:
-                            print("skipping file: ", os.path.join(root, f), " due to: ", key)
-                        mark = False
-                        break
-                    else:
-                        continue
-                if mark:
-                    res.append(os.path.join(root, f))
-                    if self.verbose:
-                        print("file: ", os.path.join(root, f), "to be operated on")
-        if self.verbose:
-            print("\nfiles to add license to")
-            print(res)
-            print()
+                res.append(os.path.join(root, f))
         return res
 
-
-def write_top(ntop, path):
-    regex = re.compile("^#!/.+$")
-    f = open(path, 'r')
-    line = f.readline()
-    mark = False
-    if regex.search(line) is not None:
-        mark = True
-        pass
-    else:
-        f.seek(0)  # reset file position
-    saved = f.read()
-    f.close()
-
-    f = open(path, 'w')
-    if mark:
-        f.write(line)
-    f.writelines([ntop, "\n", saved])
-    f.close()
+    def ignoreItems(self, dirs, items):
+        ignores = self.ignore_dirs if dirs else self.ignore_files
+        while True:  # restart from topafter deleting an element
+            i = 0
+            for item in items:
+                if ignores.ignore(item):
+                    if self.verbose:
+                        print("skipping: ", item)
+                    items.remove(item)
+                    break
+                i += 1
+            if i >= len(items):
+                break
 
 
 if __name__ == "__main__":
