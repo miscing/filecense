@@ -2357,13 +2357,20 @@ def main():
                         help="Name of licence holder."
                         "use quotation marks to include whitespace\n"
                         "Default license: EUPL",
-                        nargs=argparse.REMAINDER)
+                        nargs='?', default="")
+    parser.add_argument("-p", "--path",
+                        help="Specifies path to parse "
+                        "defaults to current directory",
+                        default=".")
     parser.add_argument("-d", "--date",
                         help="Year to use, no parsing",
                         default=datetime.now().year)
     parser.add_argument("-l", "--license",
                         help="Specifies license to add",
                         default="eupl")
+    parser.add_argument("-f", "--force",
+                        help="Overrides checks and user input.",
+                        action="store_true")
     parser.add_argument("-list", "--listlicenses",
                         help="Lists available licenses",
                         action="store_true")
@@ -2373,19 +2380,15 @@ def main():
     parser.add_argument("-sd", "--skipdir",
                         help="Sets directories to skip. "
                         "Space seperate multiple items",
-                        nargs="+")
+                        nargs="+", action="extend")
     parser.add_argument("-sf", "--skipfile",
                         help="Sets files to skip. "
                         "Space seperate multiple items",
-                        nargs="+")
+                        nargs="+", action="extend")
     parser.add_argument("-re", "--regex",
                         help="Use with skip flags, "
                         "causes arguments to be interpreted as regex strings",
                         action="store_true")
-    parser.add_argument("-p", "--path",
-                        help="Specifies path to parse "
-                        "defaults to current directory",
-                        default=".")
     parser.add_argument("-fmt", "--format",
                         type=syntax_arg,
                         help="Add filetype comment syntax. "
@@ -2394,7 +2397,7 @@ def main():
                         "Example: '-f .ext=!! Dockerfile=#' "
                         "Use '.ext' for extension detection, "
                         "otherwise will be interpreted as a regex string",
-                        nargs="+")
+                        nargs="+", action="extend")
     parser.add_argument("-c", "--comment",
                         help="Set comment syntax, replaces filetype detection",
                         default="")
@@ -2408,18 +2411,14 @@ def main():
         print_licenses()
 
     # get license holder if not provided
-    if len(args.license_holder) == 0:
-        license_holder = get_license_holder()
-    else:
-        # collect license holder array into one string
-        # hack to make positional arg optional
-        license_holder = " ".join(args.license_holder)
+    if args.license_holder == "":
+        args.license_holder = get_license_holder()
     if args.verbose:
-        print("License holder: ", license_holder)
+        print("License holder: ", args.license_holder)
 
     # print date to be used
     if args.verbose:
-        print("using date: ", args.date)
+        print("Date: ", args.date)
 
     # Set build-in items to ignore
     ignoredirs = ignore_items(const_ignore_dirs)
@@ -2438,7 +2437,7 @@ def main():
 
     # get licence
     if args.verbose:
-        print("using licence: ", args.license)
+        print("Licence: ", args.license)
     try:
         lic = license[args.license]
     except KeyError:
@@ -2459,7 +2458,7 @@ def main():
         else:
             format_str = args.comment
         top = comment_out(lic[0], format_str) % (args.date,
-                                                 license_holder)
+                                                 args.license_holder)
         if not already_has_license(f, top):
             write_top(top, f)
         else:
