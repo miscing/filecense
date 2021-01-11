@@ -2684,7 +2684,7 @@ class finder:
             for item in items:
                 if ignores.ignore(item):
                     if self.verbose:
-                        print("skipping: ", item)
+                        print("skipping: ", os.path.abspath(item))
                     items.remove(item)
                     break
                 i += 1
