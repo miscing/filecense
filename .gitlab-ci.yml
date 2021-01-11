@@ -9,7 +9,7 @@ tests:
   tags:
     - docker
     - owned
-  scripts:
+  script:
     - python test_filecense.py
 
 container:
