@@ -3,11 +3,21 @@ stages:
   - test
   - build
 
+tests:
+  image: python:latest
+  stage: test
+  tags:
+    - docker
+    - owned
+  scripts:
+    - python test_filecense.py
+
 container:
   image: docker:latest
   stage: build
   tags:
     - docker
+    - owned
   script:
     - docker build --tag $CI_REGISTRY_IMAGE/$CI_PROJECT_NAME .
     - docker login --username $CI_REGISTRY_USER --password $CI_REGISTRY_PASSWORD $CI_REGISTRY
