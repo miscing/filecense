@@ -21,7 +21,7 @@
 
 import unittest
 from filecense import finder, ignore_items, file_format, find_root
-from filecense import already_has_license, euplTop
+from filecense import already_has_license, euplTop, parser
 from filecense import const_ignore_files, const_ignore_dirs
 from filecense import write_full, write_top, syntax_arg, comment_out
 import os
@@ -97,6 +97,31 @@ def validDir(name):
         if name == d:
             return True
     return False
+
+
+class TestArguments(unittest.TestCase):
+    def setUp(self):
+        self.parser = parser()
+
+    def test_date_flag(self):
+        args = self.parser.parse_args(["-d", "2020"])
+        self.assertEqual(args.date, 2020)
+
+    def test_skipfile_flag(self):
+        skips = ["a.png", "b.png", "c.png"]
+        args = self.parser.parse_args(["-sf", "a.png", "b.png",
+                                      "-sf", "c.png"])
+        self.assertEqual(args.skipfile, skips)
+
+    def test_format_flag(self):
+        parsed = [
+                (".ext", ["//"]),
+                ("regexstr", ["#"]),
+                ("morere", ["<!--", "-->"]),
+                ]
+        args = self.parser.parse_args(["-fmt", ".ext=//", "regexstr=#",
+                                      "-fmt", "morere=<!--,-->"])
+        self.assertEqual(args.format, parsed)
 
 
 class TestIgnoreItems(unittest.TestCase):
@@ -302,11 +327,15 @@ and then the end
 
 class TestFunctions(unittest.TestCase):
     def test_syntax_arg(self):
-        self.assertEqual(syntax_arg("hello=world"), ('hello', 'world'))
-        self.assertNotEqual(syntax_arg("hello=asdoisd"), ('hello', 'world'))
+        self.assertEqual(syntax_arg("hello=world"), ('hello', ['world']))
+        self.assertNotEqual(syntax_arg("hello=asdoisd"), ('hello', ['world']))
         for inc in ["hello=asdoisd=asd09", "heasodijasd"]:
             with self.assertRaises(ValueError):
                 syntax_arg(inc)
+        self.assertEqual(syntax_arg(".ext=#"), (".ext", ["#"]))
+        self.assertEqual(syntax_arg("file=//"), ("file", ["//"]))
+        self.assertEqual(syntax_arg("file=<!--,-->"),
+                         ("file", ["<!--", "-->"]))
 
     def test_write_full(self):
         write_full("This is not a license", ".", "TESTLICENSE", "x")

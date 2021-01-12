@@ -87,6 +87,78 @@ comment_format_by_filere = [  # these are regex strings
 
 
 def main():
+    # parse command line arguments
+    args = parser().parse_args()
+
+    # initialize class that shares parsed flags with functionality
+    i_details = implementation_details(args.verbose, args.regex, args.force)
+
+    # print licenses and exit
+    if args.listlicenses:
+        i_details.print_licenses()
+
+    # get license holder if not provided
+    if len(args.license_holder) == 0:
+        license_holder = i_details.get_license_holder()
+    else:
+        license_holder = " ".join(args.license_holder)
+    if args.verbose:
+        print("License holder: ", license_holder)
+
+    # print date to be used
+    if args.verbose:
+        print("Date: ", args.date)
+
+    # Set build-in items to ignore
+    ignoredirs = ignore_items(const_ignore_dirs)
+    ignorefiles = ignore_items(const_ignore_files)
+    # Set commandline in items to ignore
+    i_details.add_ignores([
+            (args.skipdir, ignoredirs),
+            (args.skipfile, ignorefiles)
+            ])
+
+    # add command line formats
+    formats = file_format()
+    if args.format is not None:
+        for target, syntax in args.format:
+            formats.add(target, syntax)
+
+    # get licence text
+    if args.verbose:
+        print("Licence: ", args.license)
+    try:
+        lic = license[args.license]
+    except KeyError:
+        print("license not supported")
+        raise SystemExit
+
+    # get files and ignore some of them
+    files = finder(args.verbose, ignoredirs, ignorefiles).get_files(args.path)
+
+    # Double check user wants to continue
+    i_details.confirm_continue(files)
+
+    # add license to each source file
+    for f in files:
+        if args.comment == "":
+            # attempt filetype detection by extension
+            format_str = formats.comment_syntax(f)
+        else:
+            format_str = args.comment
+        top = comment_out(lic[0], format_str) % (args.date,
+                                                 license_holder)
+        if not already_has_license(f, top):
+            write_top(top, f)
+        else:
+            print("file ", f, " already has license, skipping")
+
+    # add full text
+    location = find_root(args.path)
+    i_details.write_license(lic[1], location, args.license_file_name)
+
+
+def parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("license_holder",
                         help="Name of licence holder."
@@ -145,72 +217,7 @@ def main():
     parser.add_argument("-v", "--verbose",
                         help="Increased verbosity",
                         action="store_true")
-    args = parser.parse_args()
-    i_details = implementation_details(args.verbose, args.regex, args.force)
-
-    # print licenses and exit
-    if args.listlicenses:
-        i_details.print_licenses()
-
-    # get license holder if not provided
-    if len(args.license_holder) == 0:
-        license_holder = i_details.get_license_holder()
-    else:
-        license_holder = " ".join(args.license_holder)
-    if args.verbose:
-        print("License holder: ", license_holder)
-
-    # print date to be used
-    if args.verbose:
-        print("Date: ", args.date)
-
-    # Set build-in items to ignore
-    ignoredirs = ignore_items(const_ignore_dirs)
-    ignorefiles = ignore_items(const_ignore_files)
-    # Set commandline in items to ignore
-    i_details.add_ignores([
-            (args.skipdir, ignoredirs),
-            (args.skipfile, ignorefiles)
-            ])
-
-    # add command line formats
-    formats = file_format()
-    if args.format is not None:
-        for target, syntax in args.skipfile:
-            formats.add(target, syntax)
-
-    # get licence
-    if args.verbose:
-        print("Licence: ", args.license)
-    try:
-        lic = license[args.license]
-    except KeyError:
-        print("license not supported")
-        raise SystemExit
-
-    # get files and ignore some
-    files = finder(args.verbose, ignoredirs, ignorefiles).get_files(args.path)
-
-    # Double check user wants to continue
-    i_details.confirm_continue(files)
-
-    # add license to each source file
-    for f in files:
-        if args.comment == "":
-            # attempt filetype detection by extension
-            format_str = formats.comment_syntax(f)
-        else:
-            format_str = args.comment
-        top = comment_out(lic[0], format_str) % (args.date,
-                                                 license_holder)
-        if not already_has_license(f, top):
-            write_top(top, f)
-        else:
-            print("file ", f, " already has license, skipping")
-
-    # add full text
-    location = find_root(args.path)
-    i_details.write_license(lic[1], location, args.license_file_name)
+    return parser
 
 
 # puts together parsed flags and some basic operations
@@ -338,10 +345,11 @@ def comment_out(text, comment):
 
 
 def syntax_arg(arg):
-    split = arg.split("=")
-    if len(split) != 2:
+    key_and_comment = arg.split("=")
+    if len(key_and_comment) != 2:
         raise ValueError("syntax arguments must be given in key=value format")
-    return (split[0], split[1])
+    comments = key_and_comment[1].split(",")
+    return (key_and_comment[0], comments)
 
 
 class file_format:
