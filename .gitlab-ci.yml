@@ -19,9 +19,9 @@ container:
     - docker
     - owned
   script:
-    - docker build --tag $CI_REGISTRY_IMAGE/$CI_PROJECT_NAME .
+    - docker build --tag $CI_REGISTRY_IMAGE .
     - docker login --username $CI_REGISTRY_USER --password $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker push $CI_REGISTRY_IMAGE/$CI_PROJECT_NAME
+    - docker push $CI_REGISTRY_IMAGE
   only:
     refs:
       - branches
@@ -29,3 +29,12 @@ container:
       - filecense.py
       - Dockerfile
       - .gitlab-ci.yml
+
+container-test:
+  image: docker:latest
+  needs: ["container"]
+  script:
+    - docker pull $CI_REGISTRY_IMAGE
+    - mkdir temp_test_data
+    - cp ./testdata/sourceFile.html testdata/sourceFile.css testdata/sourceFile.go testdata/sourceFile.c temp_test_data
+    - docker run --rm -v ./temp_test_data:/project $CI_REGISTRY_IMAGE John Doe

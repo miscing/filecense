@@ -20,13 +20,16 @@
 #
 
 import unittest
-from filecense import finder, ignore_items, file_format, find_root
-from filecense import already_has_license, euplTop, parser
-from filecense import const_ignore_files, const_ignore_dirs
-from filecense import write_full, write_top, syntax_arg, comment_out
+from filecense.logic import finder, ignore_items, file_format, find_root
+from filecense.logic import already_has_license, euplTop, parser
+from filecense.logic import const_ignore_files, const_ignore_dirs
+from filecense.logic import write_full, write_top, syntax_arg, comment_out
 import os
+import glob
 from datetime import datetime
 from shutil import copyfile
+
+here = os.path.dirname(os.path.realpath(__file__))
 
 testfiles = [
         "binFile",
@@ -283,41 +286,40 @@ and then the end
                 (["//"], slashslash),
                 (["<!--", "-->"], html),
         ]
+        cls.dst_path = "test_file_should_not_exist.go"
+        cls.src_path = os.path.normpath(os.path.join(here,
+                                        "../testdata/sourceFile.go"))
 
     def test_already_has_license(self):
-        dst_path = "test_file_should_not_exist.go"
-        src_path = "./testdata/sourceFile.go"
-        copyfile(src_path, dst_path)
+        copyfile(self.src_path, self.dst_path)
         name = "John Doe"
         date = datetime.now().year
         top = comment_out(euplTop, ["//"]) % (date, name)
-        self.assertFalse(already_has_license(dst_path, top))
-        write_top(top, dst_path)
-        self.assertTrue(already_has_license(dst_path, top))
-        os.remove(dst_path)
+        self.assertFalse(already_has_license(self.dst_path, top))
+        write_top(top, self.dst_path)
+        self.assertTrue(already_has_license(self.dst_path, top))
+        os.remove(self.dst_path)
 
     def test_write_top(self):
-        dst_path = "test_file_should_not_exist.go"
-        src_path = "./testdata/sourceFile.go"
-        with open(src_path) as f:
+        with open(self.src_path) as f:
             src_content = f.read()
         for s, ht in self.syntax_and_hardcoded_text:
-            copyfile(src_path, dst_path)
-            write_top(comment_out(self.uncommented, s), dst_path)
-            with open(dst_path) as f:
+            copyfile(self.src_path, self.dst_path)
+            write_top(comment_out(self.uncommented, s), self.dst_path)
+            with open(self.dst_path) as f:
                 dst_content = f.read()
             self.assertEqual(ht+"\n"+src_content, dst_content)
-            os.remove(dst_path)
+            os.remove(self.dst_path)
         # same but using actual license
-        copyfile(src_path, dst_path)
+        copyfile(self.src_path, self.dst_path)
         name = "John Doe"
         date = datetime.now().year
-        write_top(comment_out(euplTop, ["//"]) % (date, name), dst_path)
-        with open(dst_path) as f:
+        write_top(comment_out(euplTop, ["//"]) % (date, name), self.dst_path)
+        with open(self.dst_path) as f:
             dst_content = f.read()
         self.assertEqual(dst_content,
                          self.euplCommented % (date, name)+src_content)
-        os.remove(dst_path)
+        os.remove(self.dst_path)
 
     def test_comment_out(self):
         for s, ht in self.syntax_and_hardcoded_text:
@@ -349,16 +351,18 @@ class TestFunctions(unittest.TestCase):
 
 class TestFindRoot(unittest.TestCase):
     def setUp(self):
-        self.hardcoded_path = os.path.abspath("./testdata/.hiddenDir/.git")
+        self.hardcoded_path = os.path.normpath(os.path.join(here,
+                                               "../testdata/.hiddenDir/.git"))
+        os.mkdir(self.hardcoded_path)
 
     def tearDown(self):
         os.rmdir(self.hardcoded_path)
 
     def test_find_root(self):
-        os.mkdir(self.hardcoded_path)
-        root_path = find_root("./testdata")
+        root = os.path.normpath(os.path.join(here, "../testdata"))
+        root_path = find_root(root)
         self.assertEqual(root_path, os.path.dirname(self.hardcoded_path))
-        self.assertNotEqual(root_path, "./testdata")
+        self.assertNotEqual(root_path, "../testdata")
 
 
 if __name__ == '__main__':

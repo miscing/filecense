@@ -1,0 +1,3 @@
+import filecense
+
+filecense.main()

@@ -26,10 +26,10 @@ import pathlib
 from datetime import datetime
 import re
 import argparse
-from templates import euplTop, euplFull
-from templates import gpl3Top, gpl3, mitTop, mitFull
-from templates import agplTop, agplFull, mozillaTop, mozillaFull
-from templates import beerTop, beerFull, unlicenseTop, unlicenseFull
+from filecense.templates import euplTop, euplFull
+from filecense.templates import gpl3Top, gpl3, mitTop, mitFull
+from filecense.templates import agplTop, agplFull, mozillaTop, mozillaFull
+from filecense.templates import beerTop, beerFull, unlicenseTop, unlicenseFull
 
 license = {
         "eupl": [euplTop, euplFull],
@@ -470,7 +470,3 @@ class finder:
                 i += 1
             if i >= len(items):
                 break
-
-
-if __name__ == "__main__":
-    main()
